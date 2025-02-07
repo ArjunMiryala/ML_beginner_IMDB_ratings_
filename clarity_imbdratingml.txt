@@ -23,5 +23,70 @@ Yes, your statement is generally true. Initializing a tokenizer helps convert in
 Tokenization is a fundamental step in NLP, breaking down text into smaller components like words or subwords, making it easier for machine learning models to analyze and learn from the data
 
 
+<<<<<<< Truncation = Cuts off extra tokens if text is too long.
+<<<<<<<<Padding = Adds extra tokens ([PAD]) if text is too short.
 
 
+
+
+chat gpt explaination from def example to  if experiment condition:
+
+
+Starting with get_example(index):
+python
+Copy
+Edit
+def get_example(index):
+    return eval_dataset[index]["text"]
+This function simply returns the text (the original movie review) from the evaluation dataset at the position given by index.
+So if you call get_example(5), it will return the 5th review in eval_dataset (like “This movie was fantastic!”).
+Moving on to compute_metrics(pred):
+python
+Copy
+Edit
+def compute_metrics(pred):
+    experiment = comet_ml.get_global_experiment()
+
+    label = pred.label_ids
+    preds = pred.predictions.argmax(-1)
+    precision, recall, f1, _ = precision_recall_fscore_support(label, preds, average="macro")
+    acc = accuracy_score(label, preds)
+
+    if experiment :
+        epoch = int(experiment.curr_epoch) if experiment.curr_epoch is not None else 0
+        experiment.set_epoch(epoch)
+        experiment.log_confusion_matrix(
+            y_true = label,
+            y_predicted = preds,
+            file_name = f"confusion-matrix-epoch-{epoch}.json",
+            labels = ["negative", "positive"],
+            index_to_example_function = get_example
+        )
+
+        for i in range(20):
+            experiment.log_text(get_example(i), metadata={"label": label[i].item()})
+
+    return {"accuracy": acc,"f1":f1,"precision": precision,"recall":recall}
+1. Getting labels and predictions
+label = pred.label_ids: This gives you the true labels (the correct answers) for each review.
+preds = pred.predictions.argmax(-1): The model outputs “logits” (basically, raw scores). argmax(-1) picks which label (0 for negative or 1 for positive) has the highest score.
+2. Calculating the metrics
+precision, recall, and f1 come from precision_recall_fscore_support(...). “Macro” averaging means we treat both classes (negative/positive) equally in the calculation.
+acc = accuracy_score(...) is how many times the model got the correct label out of all predictions.
+3. Logging to Comet ML (if available)
+if experiment:: This just checks if we have a Comet experiment active. If yes, then we log more details.
+Confusion Matrix: experiment.log_confusion_matrix(...) logs a table showing how many times the model predicted negative vs. positive compared to the true labels.
+It uses get_example to let you view which exact text fell into each part of the confusion matrix (for example, which text was predicted negative but was actually positive).
+Logging some text samples:
+python
+Copy
+Edit
+for i in range(20):
+    experiment.log_text(get_example(i), metadata={"label": label[i].item()})
+This sends the first 20 pieces of text (the actual reviews) to Comet, along with their real labels. This helps you quickly see a few examples and their labels for easier debugging or checking.
+4. Returning the metrics
+Finally, compute_metrics returns a dictionary with accuracy, F1, precision, and recall. This is typically what your training framework will use to report or display performance.
+Summary (in simple terms):
+
+get_example → Grabs one movie review from the evaluation set.
+compute_metrics → Figures out how good the model’s predictions are (accuracy, precision, recall, F1), logs a confusion matrix so you can see where the model is messing up, and logs a few text reviews to Comet so you can read them alongside their labels. Then it sends back the final metrics.

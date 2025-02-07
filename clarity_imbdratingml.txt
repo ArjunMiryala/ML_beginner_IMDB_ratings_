@@ -1,0 +1,27 @@
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<label Explaiation>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+Why do you need labels (num_labels=2)?
+You're using AutoModelForSequenceClassification, which is a classification model. This means your task involves categorizing input text into predefined labels.
+
+
+
+<<<<<<<<<<<<<<<<<<<<<<distilbart and transformers model for sequence classification>>>>>>>>>>>>>>>>>>>
+The num_labels=2 means you're setting up a binary classification task (e.g., positive/negative, spam/ham, real/fake).
+If you were doing multi-class classification, you'd set num_labels to the number of classes (e.g., num_labels=3 for sentiment analysis: positive, neutral, negative).
+Why do you need this model if you already have sshleifer/distilbart-cnn-12-6?
+sshleifer/distilbart-cnn-12-6 is a pretrained text summarization model based on DistilBART (a smaller, faster version of BART).
+AutoModelForSequenceClassification is designed for classification tasks, not summarization.
+Since text summarization and text classification are different tasks, you need different models:
+
+<<<<<<<<<<<<<<<<summary>>>>>>>>>>>>>>>>
+If you want to summarize text, use sshleifer/distilbart-cnn-12-6.
+If you want to classify text (e.g., spam detection, sentiment analysis), you need a classification model like AutoModelForSequenceClassification.
+
+
+<<<<<<<<<<<<<<<<<<<<<Tokenization Explaiation>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+Yes, your statement is generally true. Initializing a tokenizer helps convert input data into tokens, which allows a model to better understand and process text. 
+Tokenization is a fundamental step in NLP, breaking down text into smaller components like words or subwords, making it easier for machine learning models to analyze and learn from the data
+
+
+
+

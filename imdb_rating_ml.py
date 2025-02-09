@@ -34,19 +34,24 @@ def tokenize_function(examples): #function to tokenize the data #Passig the raw 
     return tokenizer(examples["text"], padding="max_length", truncation=True, return_tensors="pt") #padding is used to make all the input data of same length, 
 #truncation is used to truncate the data if it is too long, so that it can be processed easily by the model
 
-def get_example(index):
-    return eval_dataset[index]["text"] #getting the example from the evaluation dataset at the given index
+tokenized_datasets = raw_datasets.map(tokenize_function, batched=True) #mapping the tokenized data to the dataset  
 
-tokenized_datasets = raw_datasets.map(tokenize_function, batched=True) #mapping the tokenized data to the dataset
 
 Data_collator = DataCollatorWithPadding(tokenizer = tokenizer) #initializing the data collator # creatiing a new sample of the dataset by sing tokenized dataset
-# then we split the data into batches of training data and evaluation data 
+# then we split the data into batches of training data and evaluation data and then we pad the data to make it of same length
+
 
 train_dataset = tokenized_datasets["train"].shuffle(SEED).select(range(200))#selecting the training data from the tokenized dataset, shuffling the data and selecting the first 200 samples
 eval_dataset = tokenized_datasets["test"].shuffle(SEED).select(range(200)) #selecting the evaluation data from the tokenized dataset, shuffling the data and selecting the first 200 samples
 
 model = AutoModelForSequenceClassification.from_pretrained(pre_trained_model, num_labels=2) #initializing the model #loading the pretrained model and setting the number of labels to 2
 # The num_labels=2 means we are setting up a binary classification task (e.g., positive/negative) This means your task involves categorizing input text into predefined labels.
+
+
+
+
+def get_example(index):
+    return eval_dataset[index]["text"] #getting the example from the evaluation dataset at the given index
 
 # ---------------------------------------------------------------------------------------
 # get_example(index):
@@ -140,8 +145,7 @@ trainer = Trainer(     #initializing the trainer
     compute_metrics = compute_metrics, #setting the compute metrics
     data_collator= Data_collator, #setting the data collator
 )
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu") #setting the device to cuda if available else to cpu 
-model.to(device) #moving the model to the device
+
 
 trainer.train() #training the model
 
@@ -149,7 +153,8 @@ trainer.train() #training the model
 
 
 
-
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu") #setting the device to cuda if available else to cpu 
+# model.to(device) #moving the model to the device 
 
 
 

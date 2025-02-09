@@ -105,16 +105,37 @@ def compute_metrics(pred):
     # Finally, return the calculated metrics as a dictionary
     return {"accuracy": acc, "f1": f1, "precision": precision, "recall": recall}
 
+import os
+
+os.environ["COMET_MODE"] = "ONLINE" #setting the comet mode to online , so that the results can be viewed online
+os.environ["COMET_LOG_ASSETS"] = "True" #setting the comet log assets to true, so that the assets can be logged
 
 
+training_args = TrainingArguments( #initializing the training arguments
+    seed  = SEED, #setting the seed value
+    output_dir="results", #setting the output directory
+    overwrite_output_dir = True, #setting the overwrite output directory to true
+    num_train_epochs=1, #setting the number of training epochs to 1
+    do_train = True,
+    do_eval = True,
+    evaluation_strategy="steps",
+    eval_steps=25,
+    save_strategy="steps",
+    save_total_limit=10,
+    save_steps = 25,
+    per_device_train_batch_size=8, #setting the batch size  
+)
 
+trainer = Trainer(     #initializing the trainer
+    model = model, #setting the model
+    args = training_args, #setting the training arguments
+    train_dataset = train_dataset, #setting the training dataset
+    eval_dataset = eval_dataset, #setting the evaluation dataset
+    compute_metrics = compute_metrics, #setting the compute metrics
+    data_collator= Data_collator, #setting the data collator
+)
 
-
-
-
-
-
-
+trainer.train() #training the model
 
 
 

@@ -7,15 +7,21 @@ import random
 from transformers import DataCollatorWithPadding # Data collator is used to collate the data in the form of batches(splitting the data into batches)
 from transformers import AutoModelForSequenceClassification #importing the transformer model
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support #importing the required metrics, accuracy, precision, recall, f1 score, support, etc., 
+import os
 
-
+os.environ["COMET_MODE"] = "ONLINE" #setting the comet mode to online , so that the results can be viewed online
+os.environ["COMET_LOG_ASSETS"] = "True" #setting the comet log assets to true, so that the assets can be logged
 
 experiment = comet_ml.Experiment(                   #initialize the experiment     #code from chatgpt                                     
     project_name="IMBD_distilbart",  # Replace with your desired project name
     api_key = "rimsLS7ePUrxbDV1pY10TsSyR" #got the free api key from comet website in account and apikeys 
 )
 
-pre_trained_model = "sshleifer/distilbart-cnn-12-6"  #Initializing pretrained model
+api_key = os.getenv("COMET_API_KEY") #getting the comet api key from the environment variable
+experiment = comet_ml.Experiment(project_name="IMBD_distilbart", api_key=api_key)
+
+
+pre_trained_model = "distilbert-base-uncased-finetuned-sst-2-english" #Initializing pretrained model
 
 tokenizer = AutoTokenizer.from_pretrained(pre_trained_model) # initailizing the tokenizer, it helps input data to be converted into tokens for better understanding
 #making it easier for machine learning models to analyze and learn from the data.
@@ -25,8 +31,11 @@ raw_datasets = load_dataset("imdb")  #loading the dataset
 SEED = 20      #setting the seed value
 
 def tokenize_function(examples): #function to tokenize the data #Passig the raw data to the tokenizer in order to get tokenizedd daata
-    return tokenizer(examples["text"], padding="max_length", truncation=True) #padding is used to make all the input data of same length, 
+    return tokenizer(examples["text"], padding="max_length", truncation=True, return_tensors="pt") #padding is used to make all the input data of same length, 
 #truncation is used to truncate the data if it is too long, so that it can be processed easily by the model
+
+def get_example(index):
+    return eval_dataset[index]["text"] #getting the example from the evaluation dataset at the given index
 
 tokenized_datasets = raw_datasets.map(tokenize_function, batched=True) #mapping the tokenized data to the dataset
 
@@ -45,8 +54,7 @@ model = AutoModelForSequenceClassification.from_pretrained(pre_trained_model, nu
 #   2) Returns the text (review) from `eval_dataset` at that index.
 #   3) Used by Comet ML to display which exact piece of text was incorrectly/correctly predicted.
 # ---------------------------------------------------------------------------------------
-def get_example(index):
-    return eval_dataset[index]["text"]
+
 
 
 # ---------------------------------------------------------------------------------------
@@ -101,21 +109,19 @@ def compute_metrics(pred):
         # Log the first 20 examples (reviews) to Comet with their true labels
         for i in range(20):
             experiment.log_text(get_example(i), metadata={"label": label[i].item()})
-
+    
     # Finally, return the calculated metrics as a dictionary
     return {"accuracy": acc, "f1": f1, "precision": precision, "recall": recall}
 
-import os
 
-os.environ["COMET_MODE"] = "ONLINE" #setting the comet mode to online , so that the results can be viewed online
-os.environ["COMET_LOG_ASSETS"] = "True" #setting the comet log assets to true, so that the assets can be logged
+
 
 
 training_args = TrainingArguments( #initializing the training arguments
     seed  = SEED, #setting the seed value
     output_dir="results", #setting the output directory
     overwrite_output_dir = True, #setting the overwrite output directory to true
-    num_train_epochs=1, #setting the number of training epochs to 1
+    num_train_epochs=3 , #setting the number of training epochs to 3
     do_train = True,
     do_eval = True,
     evaluation_strategy="steps",
@@ -134,9 +140,10 @@ trainer = Trainer(     #initializing the trainer
     compute_metrics = compute_metrics, #setting the compute metrics
     data_collator= Data_collator, #setting the data collator
 )
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu") #setting the device to cuda if available else to cpu 
+model.to(device) #moving the model to the device
 
 trainer.train() #training the model
-
 
 
 
